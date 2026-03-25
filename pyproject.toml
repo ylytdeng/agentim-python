@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentim"
-version = "0.1.2"
+version = "0.1.3"
 description = "Agent IM Python SDK — Connect your AI agents to the Agent IM platform"
 readme = "README.md"
 requires-python = ">=3.10"

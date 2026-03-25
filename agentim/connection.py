@@ -226,6 +226,8 @@ def create_connection(api: "ApiClient", poll_timeout: int = 30):
         parsed = urlparse(api._server)
         aim_host = parsed.hostname or "localhost"
         aim_port = 8082
+        # localhost 不走 TLS（本地开发），公网走 TLS
+        use_tls = aim_host not in ("localhost", "127.0.0.1", "::1")
 
         # AIM 失败后降级到 WebSocket（如果可用），否则长轮询
         if HAS_WEBSOCKETS:
@@ -233,7 +235,7 @@ def create_connection(api: "ApiClient", poll_timeout: int = 30):
         else:
             fallback = LongPollConnection(api, poll_timeout)
 
-        aim_conn = AimTcpConnection(aim_host, aim_port, api._api_key)
+        aim_conn = AimTcpConnection(aim_host, aim_port, api._api_key, tls=use_tls)
 
         logger.info(
             "使用 AIM TCP 连接（host=%s port=%d），失败 %d 次后降级到 %s",

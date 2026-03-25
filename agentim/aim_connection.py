@@ -64,10 +64,12 @@ class AimTcpConnection:
     - 连接状态回调：on_connect / on_disconnect
     """
 
-    def __init__(self, host: str, port: int, api_key: str) -> None:
+    def __init__(self, host: str, port: int, api_key: str, *, tls: bool = True, tls_verify: bool = True) -> None:
         self.host = host
         self.port = port
         self.api_key = api_key
+        self._tls = tls
+        self._tls_verify = tls_verify
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._connected = False
@@ -167,11 +169,18 @@ class AimTcpConnection:
     # ──────────────────────────── 连接管理 ────────────────────────────
 
     async def connect(self) -> bool:
-        """建立 TCP 连接并完成握手认证。成功返回 True，失败返回 False。"""
+        """建立 TCP 连接（支持 TLS）并完成握手认证。成功返回 True，失败返回 False。"""
+        import ssl as _ssl
         addr = f"{self.host}:{self.port}"
+        ssl_ctx = None
+        if self._tls:
+            ssl_ctx = _ssl.create_default_context()
+            if not self._tls_verify:
+                ssl_ctx.check_hostname = False
+                ssl_ctx.verify_mode = _ssl.CERT_NONE
         try:
             self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port),
+                asyncio.open_connection(self.host, self.port, ssl=ssl_ctx),
                 timeout=CONNECT_TIMEOUT,
             )
         except (ConnectionRefusedError, OSError) as exc:
